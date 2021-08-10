@@ -5,21 +5,27 @@ const jwtManager = require("../jwt");
 
 //login method
 router.post("/", (req, res, next) => {
-  const cred = req.db.collection("users").findOne({
-    $and: [{ userName: req.body.userName }, { password: req.body.password }],
-  });
-  console.log(cred);
-  //db/fs find email and password in the database
-  if (cred) {
-    const data = {};
-    data.userName = req.body.userName;
-    data.createdAt = Date.now();
-    data.role = "basic";
-    const token = jwtManager.generate(data);
-    res.json({ result: token, status: "success" });
-  } else {
-    res.json({ status: "invalid_user" });
-  }
+  req.db
+    .collection("users")
+    .find({})
+    .toArray((err, data) => {
+      if (err) throw err;
+      for (let i = 0; i < data.length; i++) {
+        if (
+          data[i].userName == req.body.userName &&
+          data[i].password == req.body.password
+        ) {
+          const payload = {};
+          payload.userName = req.body.userName;
+          payload.role = req.body.role;
+          const token = jwtManager.generate(payload);
+          res.json({ result: token, status: "success" });
+        }
+      }
+      res.json({ status: "Try-again" });
+    });
 });
+
+//db/fs find email and password in the database
 
 module.exports = router;

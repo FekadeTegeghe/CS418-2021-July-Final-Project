@@ -15,14 +15,14 @@ const reviewRouter = require("./routes/review");
 var app = express();
 
 // view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "jade");
+// app.set("views", path.join(__dirname, "views"));
+// app.set("view engine", "jade");
 
-app.use(logger("dev"));
+//app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
+//app.use(express.static(path.join(__dirname, "public")));
 
 let conn;
 app.use((req, res, next) => {
@@ -50,14 +50,24 @@ app.use("/", (req, res, next) => {
     return;
   }
   const header = req.headers.authorization; //Bearer token
+
   if (!header) {
     return res.json({ status: "auth_error" });
   } else {
     const data = JWTManager.verify(header.split(" ")[1]);
+    console.log(data);
     if (!data) {
       return res.json({ status: "auth_error" });
     }
-    next();
+    if (req.method == "DELETE" || req.method == "UPDATE") {
+      if (data.role == "superUser") {
+        next();
+      } else {
+        res.status(401).send("Error: Access Denied");
+      }
+    } else {
+      next();
+    }
   }
 });
 
