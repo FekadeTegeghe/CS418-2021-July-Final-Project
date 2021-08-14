@@ -3,6 +3,7 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+
 const MongoClient = require("mongodb").MongoClient;
 
 const JWTManager = require("./jwt");
@@ -38,6 +39,7 @@ app.use((req, res, next) => {
     next();
   }
 });
+
 app.use("/", (req, res, next) => {
   const log = {
     method: req.method,
