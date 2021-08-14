@@ -6,23 +6,18 @@ var logger = require("morgan");
 const MongoClient = require("mongodb").MongoClient;
 
 const JWTManager = require("./jwt");
-var indexRouter = require("./routes/index");
+
 var usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 const productsRouter = require("./routes/products");
 const reviewRouter = require("./routes/review");
+const signupRouter = require("./routes/signup");
 
 var app = express();
 
-// view engine setup
-// app.set("views", path.join(__dirname, "views"));
-// app.set("view engine", "jade");
-
-//app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-//app.use(express.static(path.join(__dirname, "public")));
 
 let conn;
 app.use((req, res, next) => {
@@ -43,9 +38,20 @@ app.use((req, res, next) => {
     next();
   }
 });
-
 app.use("/", (req, res, next) => {
-  if (req.url === "/signin") {
+  const log = {
+    method: req.method,
+    url: req.url,
+    status: res.statusCode,
+    date: new Date(),
+  };
+  req.db.collection("log").insertOne(log, (err, data) => {
+    if (err) throw err;
+    next();
+  });
+});
+app.use("/", (req, res, next) => {
+  if (req.url === "/signin" || req.url === "/signup") {
     next();
     return;
   }
@@ -55,15 +61,17 @@ app.use("/", (req, res, next) => {
     return res.json({ status: "auth_error" });
   } else {
     const data = JWTManager.verify(header.split(" ")[1]);
-    console.log(data);
+
     if (!data) {
       return res.json({ status: "auth_error" });
     }
-    if (req.method == "DELETE" || req.method == "UPDATE") {
+    if (req.method == "DELETE" || req.method == "PUT" || req.url == "/users") {
+      console.log("are you here?");
       if (data.role == "superUser") {
         next();
       } else {
         res.status(401).send("Error: Access Denied");
+        return;
       }
     } else {
       next();
@@ -71,11 +79,11 @@ app.use("/", (req, res, next) => {
   }
 });
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
-app.use("/signin", authRouter);
+app.use("/", usersRouter);
+app.use("/", authRouter);
 app.use("/", productsRouter);
 app.use("/", reviewRouter);
+app.use("/", signupRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

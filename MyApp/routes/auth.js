@@ -4,7 +4,7 @@ const router = express.Router();
 const jwtManager = require("../jwt");
 
 //login method
-router.post("/", (req, res, next) => {
+router.post("/signin", (req, res, next) => {
   req.db
     .collection("users")
     .find({})
@@ -13,13 +13,15 @@ router.post("/", (req, res, next) => {
       for (let i = 0; i < data.length; i++) {
         if (
           data[i].userName == req.body.userName &&
-          data[i].password == req.body.password
+          data[i].password == req.body.password &&
+          data[i].status == "active"
         ) {
           const payload = {};
           payload.userName = req.body.userName;
           payload.role = req.body.role;
           const token = jwtManager.generate(payload);
           res.json({ result: token, status: "success" });
+          return;
         }
       }
       res.json({ status: "Try-again" });
